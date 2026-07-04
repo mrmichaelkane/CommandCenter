@@ -1,6 +1,22 @@
 -- Command Centre OS: projects (Jira-style tracking) and notes (Notion-style
 -- documents). Tasks gain board fields so they can live on a project's kanban
 -- board while still appearing in the flat "My Tasks" list.
+--
+-- This migration is safe to re-run: it defines everything it depends on and
+-- every statement is idempotent, so a partially applied run can be repaired
+-- by executing the whole file again.
+
+-- Also defined in 0001, but re-declared here so this migration doesn't
+-- depend on that file having run to completion.
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
 
 -- PROJECTS ---------------------------------------------------------------
 
@@ -22,12 +38,16 @@ create index if not exists projects_user_id_idx on public.projects (user_id);
 
 alter table public.projects enable row level security;
 
+drop policy if exists "projects_select_own" on public.projects;
 create policy "projects_select_own" on public.projects
   for select using (auth.uid() = user_id);
+drop policy if exists "projects_insert_own" on public.projects;
 create policy "projects_insert_own" on public.projects
   for insert with check (auth.uid() = user_id);
+drop policy if exists "projects_update_own" on public.projects;
 create policy "projects_update_own" on public.projects
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "projects_delete_own" on public.projects;
 create policy "projects_delete_own" on public.projects
   for delete using (auth.uid() = user_id);
 
@@ -73,12 +93,16 @@ create index if not exists notes_user_updated_idx on public.notes (user_id, upda
 
 alter table public.notes enable row level security;
 
+drop policy if exists "notes_select_own" on public.notes;
 create policy "notes_select_own" on public.notes
   for select using (auth.uid() = user_id);
+drop policy if exists "notes_insert_own" on public.notes;
 create policy "notes_insert_own" on public.notes
   for insert with check (auth.uid() = user_id);
+drop policy if exists "notes_update_own" on public.notes;
 create policy "notes_update_own" on public.notes
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "notes_delete_own" on public.notes;
 create policy "notes_delete_own" on public.notes
   for delete using (auth.uid() = user_id);
 
