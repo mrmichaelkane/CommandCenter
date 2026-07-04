@@ -20,7 +20,7 @@ export async function createClient() {
             );
           } catch {
             // Called from a Server Component with no request context to
-            // write to; the middleware refreshes the session instead.
+            // write to; the proxy refreshes the session instead.
           }
         },
       },

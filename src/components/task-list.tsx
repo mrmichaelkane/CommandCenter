@@ -1,7 +1,13 @@
 import { TaskItem } from "@/components/task-item";
-import type { Task } from "@/lib/types";
+import type { TaskWithProject } from "@/lib/types";
 
-export function TaskList({ tasks, emptyLabel = "Nothing here." }: { tasks: Task[]; emptyLabel?: string }) {
+export function TaskList({
+  tasks,
+  emptyLabel = "Nothing here.",
+}: {
+  tasks: TaskWithProject[];
+  emptyLabel?: string;
+}) {
   if (tasks.length === 0) {
     return <p className="py-6 text-center text-sm text-neutral-600">{emptyLabel}</p>;
   }

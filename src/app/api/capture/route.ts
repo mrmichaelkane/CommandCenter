@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { formatISO } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { classifyCapture } from "@/lib/ai/capture";
+import { plainTextToTiptapDoc } from "@/lib/notes-doc";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -45,6 +46,28 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ result: `Logged "${habitName}" for today.` });
+  }
+
+  if (route.classification === "note") {
+    const title = route.title || route.body.slice(0, 60);
+    const { data: insertedNote, error: noteError } = await supabase
+      .from("notes")
+      .insert({
+        title,
+        content: plainTextToTiptapDoc(route.body),
+        content_text: route.body,
+      })
+      .select("id")
+      .single();
+    if (noteError) return NextResponse.json({ error: noteError.message }, { status: 500 });
+
+    await supabase.from("capture_entries").insert({
+      raw_text: trimmed,
+      classified_type: "note",
+      target_note_id: insertedNote.id,
+    });
+
+    return NextResponse.json({ result: `Created note "${title}".` });
   }
 
   // "task" and "unrecognized" both land as a task so nothing typed is lost.

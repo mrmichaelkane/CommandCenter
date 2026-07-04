@@ -36,7 +36,7 @@ export function CaptureBar() {
 
   return (
     <div className="sticky top-0 z-10 border-b border-neutral-800 bg-neutral-950/95 px-4 py-3 backdrop-blur">
-      <div className="mx-auto flex max-w-2xl items-center gap-2">
+      <div className="mx-auto flex max-w-6xl items-center gap-2">
         <Sparkles className="h-4 w-4 shrink-0 text-neutral-500" />
         <input
           ref={inputRef}
@@ -48,7 +48,7 @@ export function CaptureBar() {
           onKeyDown={(e) => {
             if (e.key === "Enter") submit();
           }}
-          placeholder="Capture anything… e.g. “finish deck by friday” or “ran 5k”"
+          placeholder="Capture anything… e.g. “finish deck by friday”, “ran 5k” or “note: gift ideas for mum”"
           disabled={isPending}
           className="min-w-0 flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none disabled:opacity-60"
         />
@@ -57,7 +57,7 @@ export function CaptureBar() {
       {feedback && (
         <p
           className={cn(
-            "mx-auto mt-1.5 max-w-2xl text-xs",
+            "mx-auto mt-1.5 max-w-6xl text-xs",
             feedback.isError ? "text-red-400" : "text-emerald-400",
           )}
         >

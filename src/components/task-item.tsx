@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { setTaskComplete, setTaskPriority, deleteTask } from "@/lib/actions/tasks";
 import { PriorityBadge } from "@/components/priority-badge";
+import { ProjectKeyBadge } from "@/components/projects/project-key-badge";
 import { cn } from "@/lib/utils";
-import type { Priority, Task } from "@/lib/types";
+import type { Priority, TaskWithProject } from "@/lib/types";
 
 const PRIORITY_CYCLE: Record<Priority, Priority> = {
   high: "medium",
@@ -13,7 +15,7 @@ const PRIORITY_CYCLE: Record<Priority, Priority> = {
   low: "high",
 };
 
-export function TaskItem({ task }: { task: Task }) {
+export function TaskItem({ task }: { task: TaskWithProject }) {
   const [isPending, startTransition] = useTransition();
   const completed = Boolean(task.completed_at);
 
@@ -49,9 +51,16 @@ export function TaskItem({ task }: { task: Task }) {
       </button>
 
       <div className="min-w-0 flex-1">
-        <p className={cn("truncate text-sm text-neutral-100", completed && "text-neutral-500 line-through")}>
-          {task.title}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className={cn("truncate text-sm text-neutral-100", completed && "text-neutral-500 line-through")}>
+            {task.title}
+          </p>
+          {task.project && (
+            <Link href={`/projects/${task.project.id}`} className="shrink-0 transition hover:brightness-125">
+              <ProjectKeyBadge projectKey={task.project.key} color={task.project.color} />
+            </Link>
+          )}
+        </div>
         {task.due_date && (
           <p className="text-xs text-neutral-500">
             Due {new Date(task.due_date + "T00:00:00").toLocaleDateString(undefined, {

@@ -11,20 +11,21 @@ function getClient() {
 export type CaptureRoute =
   | { classification: "task"; title: string; priority: Priority; dueDate: string | null }
   | { classification: "habit_log"; habitId: string }
+  | { classification: "note"; title: string; body: string }
   | { classification: "unrecognized" };
 
 const ROUTE_TOOL: Anthropic.Tool = {
   name: "route_capture",
   description:
-    "Classify a free-text capture entry as either a new task or the logging of an existing habit for today, and extract the relevant fields.",
+    "Classify a free-text capture entry as a new task, the logging of an existing habit for today, or a note to keep, and extract the relevant fields.",
   input_schema: {
     type: "object",
     properties: {
       classification: {
         type: "string",
-        enum: ["task", "habit_log", "unrecognized"],
+        enum: ["task", "habit_log", "note", "unrecognized"],
         description:
-          "'task' for anything to do or remember. 'habit_log' only when the text clearly reports completing one of the user's existing habits today. 'unrecognized' if genuinely unclear.",
+          "'task' for anything to do or remember to do. 'habit_log' only when the text clearly reports completing one of the user's existing habits today. 'note' when the text is information to keep rather than act on: ideas, thoughts, reference material, journaling, lists of things that aren't todos. 'unrecognized' if genuinely unclear.",
       },
       title: {
         type: "string",
@@ -45,6 +46,16 @@ const ROUTE_TOOL: Anthropic.Tool = {
         description:
           "Required when classification is 'habit_log'. Must be the id of one of the provided existing habits.",
       },
+      note_title: {
+        type: "string",
+        description:
+          "Required when classification is 'note'. A short descriptive title for the note.",
+      },
+      note_body: {
+        type: "string",
+        description:
+          "Required when classification is 'note'. The note content, cleaned up but preserving the user's meaning. Drop any leading 'note:' prefix.",
+      },
     },
     required: ["classification"],
   },
@@ -63,7 +74,7 @@ export async function classifyCapture(
   const message = await getClient().messages.create({
     model: "claude-sonnet-5",
     max_tokens: 500,
-    system: `Today's date is ${today}. The user's existing habits are:\n${habitList}\n\nOnly use classification "habit_log" if the text is clearly reporting that one of these specific habits was done today. Otherwise, and for anything ambiguous, classify as "task" so nothing gets lost.`,
+    system: `Today's date is ${today}. The user's existing habits are:\n${habitList}\n\nOnly use classification "habit_log" if the text is clearly reporting that one of these specific habits was done today. Use "note" when the text is content to keep rather than something to do — an idea, a thought, reference material, or anything prefixed with "note:". Otherwise, and for anything ambiguous, classify as "task" so nothing gets lost.`,
     tools: [ROUTE_TOOL],
     tool_choice: { type: "tool", name: "route_capture" },
     messages: [{ role: "user", content: text }],
@@ -78,6 +89,14 @@ export async function classifyCapture(
 
   if (input.classification === "habit_log" && typeof input.habit_id === "string") {
     return { classification: "habit_log", habitId: input.habit_id };
+  }
+
+  if (input.classification === "note" && typeof input.note_body === "string") {
+    return {
+      classification: "note",
+      title: typeof input.note_title === "string" ? input.note_title : "",
+      body: input.note_body,
+    };
   }
 
   if (input.classification === "task" && typeof input.title === "string") {
